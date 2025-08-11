@@ -28,7 +28,7 @@ export const Login = () => {
 
     try {
       setIsLoading(true);
-      const response = await fetch('http://192.168.0.123:8000/doctors/login', {
+      const response = await fetch('http://192.168.0.162:8000/doctors/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
