@@ -7,7 +7,9 @@ import {
   TrendingUp, 
   Bell, 
   ChevronLeft,
-  Stethoscope
+  Stethoscope,
+  Settings,
+    User,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -16,6 +18,11 @@ interface SidebarProps {
 }
 
 const sidebarItems = [
+    {
+    title: 'DoctorsDashboard',
+    href: '/doctorsdashboard',
+    icon: User,
+  },
   {
     title: 'Appointments',
     href: '/appointments',
@@ -30,6 +37,36 @@ const sidebarItems = [
     title: 'Notifications',
     href: '/notifications',
     icon: Bell,
+  },
+  {
+  title: 'Settings',
+  href: '/settings',
+  icon: Settings,
+},
+  {
+    title: 'Doctor Portfolio', // New item
+    href: '/portfolio',
+    icon: Stethoscope, // Or use another appropriate icon
+  },
+  //   {
+  //   title: 'Doctorsdata', 
+  //   href: 'doctorsdata',
+  //   icon:  User, 
+  // },
+   {
+    title: 'Doctorsprofile', 
+    href: 'profile',
+    icon:  User, 
+  },
+  {
+    title: 'GetData',
+    href: '/getdata',
+    icon: Bell,
+  },
+      {
+    title: 'Leads',
+    href: 'leads',
+    icon:  User, 
   },
 ];
 

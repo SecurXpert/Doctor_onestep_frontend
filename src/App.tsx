@@ -11,6 +11,12 @@ import { DigitalMarketing } from "./pages/DigitalMarketing";
 import { Notifications } from "./pages/Notifications";
 import { Profile } from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import { Settings } from "./pages/Settings";
+import Portfolio from "./pages/Portfolio";
+import Doctorsdata from "./pages/Doctorsdata";
+import  Leads  from "./pages/Leads";
+import { DoctorsDashboard } from "./pages/DoctorsDashboard";
+import { GetData } from './pages/GetData';
 
 const queryClient = new QueryClient();
 
@@ -33,8 +39,14 @@ const SessionInitializer = () => {
       if (token) {
         try {
           setIsLoading(true);
-          // Assume token is valid and set a default user
-          setUser({ email: 'unknown' }); // Adjust based on your needs
+          // Decode the token to get user info
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          setUser({
+            id: payload.id,
+            email: 'unknown', // You might want to store email in token or fetch it
+            role: payload.role,
+            token: token
+          });
         } catch (error) {
           console.error('Session restoration failed:', error);
           localStorage.removeItem('authToken');
@@ -70,11 +82,17 @@ const App = () => {
                   <Dashboard />
                 </ProtectedRoute>
               }>
-                <Route index element={<Navigate to="/appointments" replace />} />
+                <Route index element={<Navigate to="/doctorsdashboard" replace />} />
                 <Route path="appointments" element={<Appointments />} />
                 <Route path="digital-marketing" element={<DigitalMarketing />} />
                 <Route path="notifications" element={<Notifications />} />
                 <Route path="profile" element={<Profile />} />
+                <Route path="settings" element={<Settings />} />
+                <Route path="portfolio" element={<Portfolio />} />
+                <Route path="doctorsdata" element={<Doctorsdata />} />
+                <Route path="leads" element={<Leads />} />
+                <Route path="doctorsdashboard" element={<DoctorsDashboard />} />
+                 <Route path="/getdata" element={<GetData />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
@@ -86,3 +104,4 @@ const App = () => {
 };
 
 export default App;
+
