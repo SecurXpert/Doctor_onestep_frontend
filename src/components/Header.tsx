@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { Button } from './ui/button';
@@ -9,16 +9,58 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-import { User, LogOut, Menu } from 'lucide-react';
+import { User, LogOut, Menu, Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface HeaderProps {
   onMenuClick: () => void;
 }
 
+interface Notification {
+  id: number;
+  message: string;
+  timestamp: string;
+}
+
 export const Header = ({ onMenuClick }: HeaderProps) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notificationCount, setNotificationCount] = useState(0);
+
+  useEffect(() => {
+    const socket = new WebSocket("ws://api.onestepmedi.com:8000/Notifications/ws/doctor/DR201");
+
+    socket.onopen = () => {
+      console.log("Connected to WebSocket");
+    };
+
+    socket.onmessage = (event) => {
+      const newNotification = {
+        id: Date.now(),
+        message: event.data,
+        timestamp: new Date().toLocaleTimeString(),
+      };
+      setNotifications((prev) => [newNotification, ...prev].slice(0, 10)); // Keep latest 10 notifications
+      setNotificationCount((prev) => prev + 1);
+
+      // Play notification sound
+      const audio = new Audio('https://www.soundjay.com/buttons/beep-01a.mp3');
+      audio.play().catch((err) => console.log("Audio playback failed:", err));
+    };
+
+    socket.onclose = () => {
+      console.log("Disconnected from WebSocket");
+    };
+
+    socket.onerror = (error) => {
+      console.error("WebSocket error:", error);
+    };
+
+    return () => {
+      socket.close();
+    };
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -27,6 +69,11 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
 
   const handleProfile = () => {
     navigate('/profile');
+  };
+
+  const handleClearNotifications = () => {
+    setNotifications([]);
+    setNotificationCount(0);
   };
 
   return (
@@ -53,6 +100,48 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
         </div>
 
         <div className="flex items-center gap-4">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                <Bell className="h-5 w-5" />
+                {notificationCount > 0 && (
+                  <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
+                    {notificationCount}
+                  </span>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-80 bg-card border shadow-medical" align="end">
+              <div className="flex items-center justify-between p-2">
+                <p className="text-sm font-medium text-foreground">
+                  Notifications ({notificationCount})
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleClearNotifications}
+                  className="text-xs text-destructive"
+                >
+                  Clear All
+                </Button>
+              </div>
+              <DropdownMenuSeparator />
+              {notifications.length === 0 ? (
+                <p className="text-sm text-muted-foreground p-2">No notifications</p>
+              ) : (
+                notifications.map((notification) => (
+                  <DropdownMenuItem key={notification.id} className="flex flex-col items-start p-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-blue-500">📨</span>
+                      <span className="text-sm">{notification.message}</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">{notification.timestamp}</span>
+                  </DropdownMenuItem>
+                ))
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-10 w-10 rounded-full">

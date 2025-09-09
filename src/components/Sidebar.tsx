@@ -7,7 +7,10 @@ import {
   TrendingUp, 
   Bell, 
   ChevronLeft,
-  Stethoscope
+  Stethoscope,
+  Settings,
+  User,
+  ChevronDown,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -16,6 +19,11 @@ interface SidebarProps {
 }
 
 const sidebarItems = [
+  {
+    title: 'Dashboard',
+    href: '/doctorsdashboard',
+    icon: User,
+  },
   {
     title: 'Appointments',
     href: '/appointments',
@@ -31,14 +39,42 @@ const sidebarItems = [
     href: '/notifications',
     icon: Bell,
   },
+  {
+    title: 'Settings',
+    icon: Settings,
+    subItems: [
+      { title: 'Change Password', href: 'change-password' },
+      { title: 'My Subscriptions', href: 'subscriptions' },
+      { title: 'Availability', href: 'availability' },
+      { title: 'Terms and Conditions', href: 'terms' },
+      { title: 'Privacy Policy', href: 'privacy' },
+    ],
+  },
+  {
+    title: 'Portfolio',
+    icon: Stethoscope,
+    subItems: [
+      { title: 'View', href: '/doctorportfolio' },
+      { title: 'Edit', href: '/doctorportfolio/edit' },
+    ],
+  },
 ];
 
 export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const [openSubMenu, setOpenSubMenu] = useState<string | null>(null);
 
   const toggleCollapsed = () => {
     setCollapsed(!collapsed);
+    if (!collapsed) {
+      setOpenSubMenu(null); // Close any open submenus when collapsing
+    }
+  };
+
+  const toggleSubMenu = (title: string) => {
+    if (collapsed) return; // Prevent submenu toggling when collapsed
+    setOpenSubMenu(openSubMenu === title ? null : title);
   };
 
   return (
@@ -83,27 +119,76 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
           <nav className="flex-1 p-4">
             <ul className="space-y-2">
               {sidebarItems.map((item) => {
-                const isActive = location.pathname.startsWith(item.href);
+                const isSubMenuOpen = openSubMenu === item.title;
+
                 return (
-                  <li key={item.href}>
-                    <NavLink
-                      to={item.href}
-                      onClick={() => {
-                        if (window.innerWidth < 768) {
-                          onClose();
+                  <li key={item.href || item.title}>
+                    {item.href ? (
+                      <NavLink
+                        to={item.href}
+                        onClick={() => {
+                          if (window.innerWidth < 768) {
+                            onClose();
+                          }
+                        }}
+                        className={({ isActive }) =>
+                          cn(
+                            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
+                            isActive
+                              ? "bg-primary text-primary-foreground shadow-medical"
+                              : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                            collapsed && "justify-center px-2"
+                          )
                         }
-                      }}
-                      className={cn(
-                        "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
-                        isActive
-                          ? "bg-primary text-primary-foreground shadow-medical"
-                          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-                        collapsed && "justify-center px-2"
-                      )}
-                    >
-                      <item.icon className="h-5 w-5 flex-shrink-0" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
+                      >
+                        <item.icon className="h-5 w-5 flex-shrink-0" />
+                        {!collapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    ) : (
+                      <div
+                        onClick={() => toggleSubMenu(item.title)}
+                        className={cn(
+                          "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer",
+                          isSubMenuOpen
+                            ? "bg-primary text-primary-foreground shadow-medical"
+                            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                          collapsed && "justify-center px-2"
+                        )}
+                      >
+                        <item.icon className="h-5 w-5 flex-shrink-0" />
+                        {!collapsed && <span>{item.title}</span>}
+                        {!collapsed && item.subItems && (
+                          <ChevronDown className={cn(
+                            "ml-auto h-4 w-4 transition-transform",
+                            isSubMenuOpen && "rotate-180"
+                          )} />
+                        )}
+                      </div>
+                    )}
+                    {!collapsed && isSubMenuOpen && item.subItems && (
+                      <ul className="ml-6 mt-2 space-y-1">
+                        {item.subItems.map((subItem) => (
+                          <li key={subItem.href}>
+                            <NavLink
+                              to={subItem.href}
+                              onClick={() => {
+                                if (window.innerWidth < 768) {
+                                  onClose();
+                                }
+                              }}
+                              className={({ isActive }) =>
+                                cn(
+                                  "flex items-center gap-3 px-3 py-1 rounded-lg text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-200",
+                                  isActive && "bg-accent text-accent-foreground"
+                                )
+                              }
+                            >
+                              <span>{subItem.title}</span>
+                            </NavLink>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </li>
                 );
               })}
