@@ -45,7 +45,11 @@ const Doctorsdata: React.FC = () => {
       setError('');
       setSuccess('');
       const response = await axios.get<DoctorData>(
+<<<<<<< HEAD
         `https://api.onestepmedi.com:8000/doctors/profile/${doctorId || user?.doctor_id}`
+=======
+        `http://192.168.0.111:10000/doctors/profile/${doctorId || user?.doctor_id}`
+>>>>>>> cc8e6812aa9ce75feec954278081906ab6c16ac3
       );
       setDoctorData(response.data);
       setFormData({
@@ -79,7 +83,11 @@ const Doctorsdata: React.FC = () => {
       setError('');
       setSuccess('');
       await axios.put(
+<<<<<<< HEAD
         `https://api.onestepmedi.com:8000/doctors/profile/${doctorId || user?.doctor_id}`,
+=======
+        `http://192.168.0.111:10000/doctors/profile/${doctorId || user?.doctor_id}`,
+>>>>>>> cc8e6812aa9ce75feec954278081906ab6c16ac3
         formData
       );
       setSuccess('Doctor profile updated successfully!');

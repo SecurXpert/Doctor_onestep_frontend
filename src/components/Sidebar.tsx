@@ -9,8 +9,10 @@ import {
   ChevronLeft,
   Stethoscope,
   Settings,
+
   User,
   ChevronDown,
+
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -19,6 +21,11 @@ interface SidebarProps {
 }
 
 const sidebarItems = [
+    {
+    title: 'DoctorsDashboard',
+    href: '/doctorsdashboard',
+    icon: User,
+  },
   {
     title: 'Dashboard',
     href: '/doctorsdashboard',
@@ -40,6 +47,7 @@ const sidebarItems = [
     icon: Bell,
   },
   {
+
     title: 'Settings',
     icon: Settings,
     subItems: [
@@ -57,6 +65,7 @@ const sidebarItems = [
       { title: 'View', href: '/doctorportfolio' },
       { title: 'Edit', href: '/doctorportfolio/edit' },
     ],
+
   },
 ];
 

@@ -20,7 +20,11 @@
 //     setLoading(true);
 //     setError(null);
 //     try {
+<<<<<<< HEAD
 //       const response = await axios.get(`https://api.onestepmedi.com:8000/dm-leads/${id}`);
+=======
+//       const response = await axios.get(`http://192.168.0.111:10000/dm-leads/${id}`);
+>>>>>>> cc8e6812aa9ce75feec954278081906ab6c16ac3
 //       setLeads(response.data);
 //     } catch (err) {
 //       setError('Failed to fetch leads. Please check the Doctor ID or try again later.');
@@ -121,7 +125,11 @@ const Leads: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
+<<<<<<< HEAD
       const response = await axios.get(`https://api.onestepmedi.com:8000/dm-leads/${id}`);
+=======
+      const response = await axios.get(`http://192.168.0.111:10000/dm-leads/${id}`);
+>>>>>>> cc8e6812aa9ce75feec954278081906ab6c16ac3
       console.log('API Response:', response.data); // Debugging
       setLeads(response.data);
     } catch (err: any) {

@@ -21,6 +21,9 @@ import { DoctorsDashboard } from "./pages/DoctorsDashboard";
 import { PortfolioForm} from "./pages/EditProtfolio";
 import { Profile } from "./pages/Profile";
 
+
+
+
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -101,6 +104,8 @@ const App = () => {
                 <Route path="doctorsdashboard" element={<DoctorsDashboard />} />
                 <Route path="doctorportfolio" element={<ViewPortfolio />} />
                 <Route path="doctorportfolio/edit" element={< PortfolioForm />} />
+
+
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
@@ -112,3 +117,4 @@ const App = () => {
 };
 
 export default App;
+

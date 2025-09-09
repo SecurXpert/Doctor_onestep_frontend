@@ -81,7 +81,11 @@ const Portfolio: React.FC = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
 
+<<<<<<< HEAD
   const API_BASE_URL = 'https://api.onestepmedi.com:8000';
+=======
+  const API_BASE_URL = 'http://192.168.0.111:10000';
+>>>>>>> cc8e6812aa9ce75feec954278081906ab6c16ac3
 
   // useEffect(() => {
   //   fetchDoctors();
@@ -440,7 +444,11 @@ const Portfolio: React.FC = () => {
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold">Doctors</h2>
             <button onClick={handleAdd} className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded flex items-center gap-2">
+<<<<<<< HEAD
               <FaPlus /> Add Doctor
+=======
+              <FaPlus /> create Portfolio
+>>>>>>> cc8e6812aa9ce75feec954278081906ab6c16ac3
             </button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -805,4 +813,9 @@ const Portfolio: React.FC = () => {
   );
 };
 
+<<<<<<< HEAD
 export default Portfolio;
+=======
+export default Portfolio;
+
+>>>>>>> cc8e6812aa9ce75feec954278081906ab6c16ac3

@@ -72,13 +72,6 @@ interface Prescription {
   tests: Test[];
 }
 
-interface HoldRequest {
-  doctor_id: string;
-  hold_start: string;
-  hold_end: string;
-  reason: string;
-}
-
 const rescheduledAppointments: Appointment[] = [
   {
     appointment_id: "RESCH001",
@@ -118,7 +111,7 @@ const AppointmentCard = ({
   onViewDetails,
   onAccept,
   showActions = false,
-  isAlreadyAccepted = false,
+  isAlreadyAccepted = false, // New prop to indicate if already accepted
 }: {
   appointment: Appointment;
   onReject?: (id: string) => void;
@@ -130,12 +123,12 @@ const AppointmentCard = ({
   const { user, logout } = useAuth();
   const { toast } = useToast();
 
-  const token = localStorage.getItem('authToken');
-  const decodedToken = token ? decodeToken(token) : null;
+  // Decode token to get doctor_id
+  const decodedToken = user?.token ? decodeToken(user.token) : null;
   const doctorId = decodedToken?.id;
 
   const handleAccept = async (e: React.MouseEvent) => {
-    e.stopPropagation();
+    e.stopPropagation(); // Prevent triggering onViewDetails
     if (!doctorId) {
       toast({
         title: "Error",
@@ -248,16 +241,12 @@ export const Appointments = () => {
   const [doctorSpecialization, setDoctorSpecialization] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('upcoming');
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState<{ [key: string]: string | null }>({
-    profile: null,
-    regular: null,
-    emergency: null,
-  });
+  const [error, setError] = useState<string | null>(null);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [rejectAppointmentId, setRejectAppointmentId] = useState<string | null>(null);
-  const [alreadyAcceptedAppointments, setAlreadyAcceptedAppointments] = useState<Set<string>>(new Set());
+  const [alreadyAcceptedAppointments, setAlreadyAcceptedAppointments] = useState<Set<string>>(new Set()); // Track already accepted appointments
   const [prescription, setPrescription] = useState<Prescription>({
     appointment_id: '',
     patient_id: '',
@@ -275,28 +264,15 @@ export const Appointments = () => {
     },
     tests: [],
   });
-  const [holdDialogOpen, setHoldDialogOpen] = useState(false);
-  const [holdRequest, setHoldRequest] = useState<HoldRequest>({
-    doctor_id: '',
-    hold_start: '',
-    hold_end: '',
-    reason: '',
-  });
   const navigate = useNavigate();
 
   // Fetch doctor's profile to get specialization
   const fetchDoctorProfile = async (doctorId: string) => {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      setErrors(prev => ({ ...prev, profile: 'No authentication token found. Please log in.' }));
-      logout();
-      return null;
-    }
     try {
       const response = await fetch(`https://api.onestepmedi.com:8000/doctors/profile/${doctorId}`, {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${user?.token}`,
         },
       });
       if (!response.ok) {
@@ -309,7 +285,7 @@ export const Appointments = () => {
       console.log('Doctor profile:', data);
       return data.specialization_name || null;
     } catch (err: any) {
-      setErrors(prev => ({ ...prev, profile: `Failed to fetch doctor profile: ${err.message}` }));
+      setError(`❌ Failed to fetch doctor profile: ${err.message}`);
       if (err.message === 'Session expired') {
         logout();
       }
@@ -319,17 +295,11 @@ export const Appointments = () => {
 
   // Fetch emergency appointments and filter by specialization
   const fetchEmergencyAppointments = async (specialization: string) => {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      setErrors(prev => ({ ...prev, emergency: 'No authentication token found. Please log in.' }));
-      logout();
-      return [];
-    }
     try {
       const response = await fetch('https://api.onestepmedi.com:8000/emergency/payment_conf_appointments/', {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${user?.token}`,
         },
       });
       if (!response.ok) {
@@ -358,9 +328,10 @@ export const Appointments = () => {
           status: apt.status,
           rejected_reason: apt.rejected_reason,
         }));
+      setEmergencyAppointments(mappedAppointments);
       return mappedAppointments;
     } catch (err: any) {
-      setErrors(prev => ({ ...prev, emergency: `Failed to fetch emergency appointments: ${err.message}` }));
+      setError(`❌ Failed to fetch emergency appointments: ${err.message}`);
       if (err.message === 'Session expired') {
         logout();
       }
@@ -368,19 +339,43 @@ export const Appointments = () => {
     }
   };
 
-  // Fetch regular appointments
-  const fetchRegularAppointments = async (doctorId: string) => {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      setErrors(prev => ({ ...prev, regular: 'No authentication token found. Please log in.' }));
+  // Fetch all appointments
+  const fetchAppointments = async () => {
+    if (!user?.token) {
+      toast({
+        title: "Error",
+        description: "Please log in again",
+        variant: "destructive"
+      });
       logout();
-      return [];
+      return;
     }
+
+    const decodedToken = decodeToken(user.token);
+    const doctorId = decodedToken?.id;
+
+    if (!doctorId) {
+      toast({
+        title: "Error",
+        description: "Invalid token. Please log in again.",
+        variant: "destructive"
+      });
+      logout();
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
     try {
+      // Fetch doctor's specialization from profile
+      const specialization = await fetchDoctorProfile(doctorId);
+      setDoctorSpecialization(specialization);
+
+      // Fetch regular appointments
       const response = await fetch(`https://api.onestepmedi.com:8000/appointments/doctor-appointments/?doctor_id=${doctorId}`, {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${user?.token}`,
         },
       });
       if (!response.ok) {
@@ -391,7 +386,9 @@ export const Appointments = () => {
       }
       const data = await response.json();
       console.log('Regular appointments:', data);
-      return data.map((apt: any) => ({
+
+      // Map API response to Appointment interface
+      const mappedAppointments: Appointment[] = data.map((apt: any) => ({
         appointment_id: apt.appointment_id,
         doctor_unique_id: apt.doctor_unique_id,
         doctor_name: apt.doctor_name || 'Unknown Doctor',
@@ -407,97 +404,34 @@ export const Appointments = () => {
         status: apt.status,
         rejected_reason: apt.rejected_reason,
       }));
+
+      // Fetch emergency appointments if specialization is available
+      let emergencyAppts: Appointment[] = [];
+      if (specialization) {
+        emergencyAppts = await fetchEmergencyAppointments(specialization);
+      }
+
+      // Combine all appointments
+      const allAppointments = [...mappedAppointments, ...emergencyAppts, ...rescheduledAppointments];
+      console.log('All appointments:', allAppointments);
+      setAppointments(allAppointments);
     } catch (err: any) {
-      setErrors(prev => ({ ...prev, regular: `Failed to fetch regular appointments: ${err.message}` }));
+      setError(`❌ ${err.message}`);
       if (err.message === 'Session expired') {
         logout();
       }
-      return [];
+    } finally {
+      setIsLoading(false);
     }
-  };
-
-  // Fetch all appointments
-  const fetchAppointments = async () => {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      toast({
-        title: "Error",
-        description: "No authentication token found. Please log in again.",
-        variant: "destructive",
-      });
-      logout();
-      return;
-    }
-
-    const decodedToken = decodeToken(token);
-    const doctorId = decodedToken?.id;
-
-    if (!doctorId) {
-      toast({
-        title: "Error",
-        description: "Invalid token. Please log in again.",
-        variant: "destructive",
-      });
-      logout();
-      return;
-    }
-
-    setIsLoading(true);
-    setErrors({ profile: null, regular: null, emergency: null });
-
-    // Set doctor_id for hold request
-    setHoldRequest(prev => ({ ...prev, doctor_id: doctorId }));
-
-    // Fetch data in parallel but handle each independently
-    const [specialization, regularAppts, emergencyAppts] = await Promise.all([
-      fetchDoctorProfile(doctorId),
-      fetchRegularAppointments(doctorId),
-      doctorSpecialization !== null ? fetchEmergencyAppointments(doctorSpecialization || '') : Promise.resolve([]),
-    ]);
-
-    setDoctorSpecialization(specialization);
-
-    // Combine available appointments
-    const allAppointments = [
-      ...regularAppts,
-      ...emergencyAppts,
-      ...rescheduledAppointments,
-    ];
-    console.log('All appointments:', allAppointments);
-    setAppointments(allAppointments);
-    setEmergencyAppointments(emergencyAppts);
-
-    // Show toasts for any errors
-    Object.entries(errors).forEach(([key, error]) => {
-      if (error) {
-        toast({
-          title: `Error in ${key.charAt(0).toUpperCase() + key.slice(1)}`,
-          description: error,
-          variant: "destructive",
-        });
-      }
-    });
-
-    setIsLoading(false);
   };
 
   // Fetch patient profile
   const fetchPatientProfile = async (patientName: string): Promise<string | null> => {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      toast({
-        title: "Error",
-        description: "No authentication token found. Please log in.",
-        variant: "destructive",
-      });
-      logout();
-      return null;
-    }
     try {
       const response = await fetch(`https://api.onestepmedi.com:8000/profile/patient?name=${encodeURIComponent(patientName)}`, {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${user?.token}`,
         },
       });
       if (!response.ok) {
@@ -510,11 +444,7 @@ export const Appointments = () => {
       console.log('Patient profile:', data);
       return data.patient_id || null;
     } catch (err: any) {
-      toast({
-        title: "Error",
-        description: `Failed to fetch patient profile for ${patientName}: ${err.message}`,
-        variant: "destructive",
-      });
+      setError(`Failed to fetch patient profile for ${patientName}: ${err.message}`);
       if (err.message === 'Session expired') {
         logout();
       }
@@ -524,22 +454,12 @@ export const Appointments = () => {
 
   // Handle accept appointment
   const handleAccept = async (appointmentId: string, doctorId: string) => {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      toast({
-        title: "Error",
-        description: "No authentication token found. Please log in again.",
-        variant: "destructive",
-      });
-      logout();
-      return;
-    }
     try {
       const response = await fetch('https://api.onestepmedi.com:8000/emergency/accept', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${user?.token}`,
         },
         body: JSON.stringify({
           doctor_id: doctorId,
@@ -552,7 +472,7 @@ export const Appointments = () => {
           title: "Success",
           description: "Appointment accepted successfully",
         });
-        fetchAppointments();
+        fetchAppointments(); // Refresh appointments list
       } else {
         const errorData = await response.json().catch(() => ({}));
         if (errorData.detail === '⛔ Already accepted by another doctor') {
@@ -589,17 +509,6 @@ export const Appointments = () => {
   const submitRejection = async () => {
     if (!rejectReason || !rejectAppointmentId) return;
 
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      toast({
-        title: "Error",
-        description: "No authentication token found. Please log in again.",
-        variant: "destructive",
-      });
-      logout();
-      return;
-    }
-
     try {
       const response = await fetch(
         `https://api.onestepmedi.com:8000/appointments/appointments/reject/${rejectAppointmentId}?reason=${encodeURIComponent(rejectReason)}`,
@@ -607,7 +516,7 @@ export const Appointments = () => {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${user?.token}`,
           },
         }
       );
@@ -631,70 +540,7 @@ export const Appointments = () => {
       toast({
         title: "Error",
         description: err.message,
-        variant: "destructive",
-      });
-      if (err.message === 'Session expired') {
-        logout();
-      }
-    }
-  };
-
-  // Handle hold submission
-  const handleHoldSubmit = async () => {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      toast({
-        title: "Error",
-        description: "No authentication token found. Please log in again.",
-        variant: "destructive",
-      });
-      logout();
-      return;
-    }
-
-    if (!holdRequest.hold_start || !holdRequest.hold_end || !holdRequest.reason) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const response = await fetch('https://api.onestepmedi.com:8000/doctor/hold/add', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(holdRequest),
-      });
-
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: "Hold request submitted successfully",
-        });
-        setHoldDialogOpen(false);
-        setHoldRequest({
-          doctor_id: holdRequest.doctor_id,
-          hold_start: '',
-          hold_end: '',
-          reason: '',
-        });
-        fetchAppointments();
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          response.status === 401 ? 'Session expired' : `Failed to submit hold request: ${errorData.message || response.statusText}`
-        );
-      }
-    } catch (err: any) {
-      toast({
-        title: "Error",
-        description: err.message,
-        variant: "destructive",
+        variant: "destructive"
       });
       if (err.message === 'Session expired') {
         logout();
@@ -707,7 +553,8 @@ export const Appointments = () => {
     if (!patientId && appointment.appointment_type !== 'emergency') {
       patientId = await fetchPatientProfile(appointment.name);
       if (!patientId) {
-        return; // Error is already shown in fetchPatientProfile
+        setError(`Cannot open case study: Patient ID not found for ${appointment.name}`);
+        return;
       }
     }
 
@@ -733,17 +580,6 @@ export const Appointments = () => {
 
   const handlePrescriptionSubmit = async () => {
     if (!selectedAppointment) return;
-
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      toast({
-        title: "Error",
-        description: "No authentication token found. Please log in again.",
-        variant: "destructive",
-      });
-      logout();
-      return;
-    }
 
     const payload = {
       appointment_id: prescription.appointment_id,
@@ -772,7 +608,7 @@ export const Appointments = () => {
       toast({
         title: "Error",
         description: "Patient ID is missing. Please ensure the patient has a valid profile.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
@@ -782,7 +618,7 @@ export const Appointments = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${user?.token}`,
         },
         body: JSON.stringify(payload),
       });
@@ -821,7 +657,7 @@ export const Appointments = () => {
       toast({
         title: "Error",
         description: err.message,
-        variant: "destructive",
+        variant: "destructive"
       });
       if (err.message === 'Session expired') {
         logout();
@@ -876,21 +712,11 @@ export const Appointments = () => {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      fetchAppointments();
-    } else {
-      toast({
-        title: "Error",
-        description: "No authentication token found. Please log in again.",
-        variant: "destructive",
-      });
-      logout();
-    }
-  }, []);
+    fetchAppointments();
+  }, [user]);
 
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  today.setHours(0, 0, 0, 0); // Normalize to start of day for comparison
 
   const filteredAppointments = appointments
     .filter((apt) =>
@@ -937,17 +763,9 @@ export const Appointments = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Appointments</h1>
-          <p className="text-muted-foreground">Manage all your appointments</p>
-        </div>
-        <Button
-          className="bg-primary text-primary-foreground hover:bg-primary/90"
-          onClick={() => setHoldDialogOpen(true)}
-        >
-          Hold
-        </Button>
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">Appointments</h1>
+        <p className="text-muted-foreground">Manage all your appointments</p>
       </div>
 
       <div className="relative">
@@ -962,65 +780,62 @@ export const Appointments = () => {
 
       {isLoading ? (
         <p className="text-muted-foreground">Loading appointments...</p>
+      ) : error ? (
+        <p className="text-red-500">{error}</p>
       ) : (
-        <>
-          {errors.profile && <p className="text-red-500">{errors.profile}</p>}
-          {errors.regular && <p className="text-red-500">{errors.regular}</p>}
-          {errors.emergency && <p className="text-red-500">{errors.emergency}</p>}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5 bg-card shadow-card-medical">
-              <TabsTrigger value="emergency" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                Emergency Slots ({categorized.emergency.length})
-              </TabsTrigger>
-              <TabsTrigger value="upcoming" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                Upcoming ({categorized.upcoming.length})
-              </TabsTrigger>
-              <TabsTrigger value="month" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                All Appointments ({categorized.month.length})
-              </TabsTrigger>
-              <TabsTrigger value="rescheduled" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                Rescheduled ({categorized.rescheduled.length})
-              </TabsTrigger>
-              <TabsTrigger value="rejected" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                Rejected ({categorized.rejected.length})
-              </TabsTrigger>
-            </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5 bg-card shadow-card-medical">
+            <TabsTrigger value="emergency" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              Emergency Slots ({categorized.emergency.length})
+            </TabsTrigger>
+            <TabsTrigger value="upcoming" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              Upcoming ({categorized.upcoming.length})
+            </TabsTrigger>
+            <TabsTrigger value="month" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              All Appointments ({categorized.month.length})
+            </TabsTrigger>
+            <TabsTrigger value="rescheduled" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              Rescheduled ({categorized.rescheduled.length})
+            </TabsTrigger>
+            <TabsTrigger value="rejected" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              Rejected ({categorized.rejected.length})
+            </TabsTrigger>
+          </TabsList>
 
-            {Object.entries(categorized).map(([key, appts]) => (
-              <TabsContent key={key} value={key} className="space-y-4">
-                <Card className="shadow-card-medical">
-                  <CardHeader>
-                    <CardTitle className={
-                      key === 'rejected' ? 'text-destructive' :
-                      key === 'emergency' ? 'text-success' :
-                      key === 'rescheduled' ? 'text-info' : 'text-warning'
-                    }>
-                      {key.charAt(0).toUpperCase() + key.slice(1)} Appointments
-                    </CardTitle>
-                    <CardDescription>Filtered by {key}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {appts.length === 0 ? (
-                      <p className="text-muted-foreground">No appointments found.</p>
-                    ) : (
-                      appts.map((appointment) => (
-                        <AppointmentCard
-                          key={appointment.appointment_id}
-                          appointment={appointment}
-                          showActions={key === 'upcoming' || key === 'emergency'}
-                          onReject={handleReject}
-                          onViewDetails={handleViewDetails}
-                          onAccept={handleAccept}
-                          isAlreadyAccepted={alreadyAcceptedAppointments.has(appointment.appointment_id)}
-                        />
-                      ))
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            ))}
-          </Tabs>
-        </>
+          {Object.entries(categorized).map(([key, appts]) => (
+            <TabsContent key={key} value={key} className="space-y-4">
+              <Card className="shadow-card-medical">
+                <CardHeader>
+                  <CardTitle className={
+                    key === 'rejected' ? 'text-destructive' :
+                    key === 'emergency' ? 'text-success' :
+                    key === 'rescheduled' ? 'text-info' : 'text-warning'
+                  }>
+                    {key.charAt(0).toUpperCase() + key.slice(1)} Appointments
+                  </CardTitle>
+                  <CardDescription>Filtered by {key}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {appts.length === 0 ? (
+                    <p className="text-muted-foreground">No appointments found.</p>
+                  ) : (
+                    appts.map((appointment) => (
+                      <AppointmentCard
+                        key={appointment.appointment_id}
+                        appointment={appointment}
+                        showActions={key === 'upcoming' || key === 'emergency'}
+                        onReject={handleReject}
+                        onViewDetails={handleViewDetails}
+                        onAccept={handleAccept}
+                        isAlreadyAccepted={alreadyAcceptedAppointments.has(appointment.appointment_id)} // Pass acceptance status
+                      />
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          ))}
+        </Tabs>
       )}
 
       <Dialog open={selectedAppointment !== null} onOpenChange={(open) => !open && setSelectedAppointment(null)}>
@@ -1225,67 +1040,6 @@ export const Appointments = () => {
               variant="destructive"
               onClick={submitRejection}
               disabled={!rejectReason}
-            >
-              Submit
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={holdDialogOpen} onOpenChange={setHoldDialogOpen}>
-        <DialogContent className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-          <DialogHeader>
-            <DialogTitle>Create Hold Request</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label className="block text-sm font-medium text-muted-foreground mb-1">Doctor ID</Label>
-              <Input value={holdRequest.doctor_id} readOnly />
-            </div>
-            <div>
-              <Label className="block text-sm font-medium text-muted-foreground mb-1">Hold Start</Label>
-              <Input
-                type="datetime-local"
-                value={holdRequest.hold_start}
-                onChange={(e) => setHoldRequest({ ...holdRequest, hold_start: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label className="block text-sm font-medium text-muted-foreground mb-1">Hold End</Label>
-              <Input
-                type="datetime-local"
-                value={holdRequest.hold_end}
-                onChange={(e) => setHoldRequest({ ...holdRequest, hold_end: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label className="block text-sm font-medium text-muted-foreground mb-1">Reason</Label>
-              <Textarea
-                value={holdRequest.reason}
-                onChange={(e) => setHoldRequest({ ...holdRequest, reason: e.target.value })}
-                placeholder="Enter reason for hold..."
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setHoldDialogOpen(false);
-                setHoldRequest({
-                  doctor_id: holdRequest.doctor_id,
-                  hold_start: '',
-                  hold_end: '',
-                  reason: '',
-                });
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              className="bg-success text-success-foreground hover:bg-success/90"
-              onClick={handleHoldSubmit}
-              disabled={!holdRequest.hold_start || !holdRequest.hold_end || !holdRequest.reason}
             >
               Submit
             </Button>

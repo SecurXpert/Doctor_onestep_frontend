@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
+<<<<<<< HEAD
 import Profile  from '@/components/'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -136,6 +137,13 @@ export const Settings = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('profile');
+=======
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+export const Settings = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+>>>>>>> cc8e6812aa9ce75feec954278081906ab6c16ac3
   const [formData, setFormData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -143,7 +151,11 @@ export const Settings = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
 
+<<<<<<< HEAD
   const handleInputChange = (e) => {
+=======
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+>>>>>>> cc8e6812aa9ce75feec954278081906ab6c16ac3
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -151,11 +163,19 @@ export const Settings = () => {
     }));
   };
 
+<<<<<<< HEAD
   const handleSubmit = async (e) => {
+=======
+  const handleSubmit = async (e: React.FormEvent) => {
+>>>>>>> cc8e6812aa9ce75feec954278081906ab6c16ac3
     e.preventDefault();
     setIsLoading(true);
 
     try {
+<<<<<<< HEAD
+=======
+      // Basic validation
+>>>>>>> cc8e6812aa9ce75feec954278081906ab6c16ac3
       if (formData.newPassword !== formData.confirmPassword) {
         throw new Error("New password and confirm password don't match");
       }
@@ -163,6 +183,11 @@ export const Settings = () => {
         throw new Error("New password must be at least 8 characters long");
       }
 
+<<<<<<< HEAD
+=======
+      // Here you would typically make an API call to update the password
+      // For demo purposes, we'll simulate a successful update
+>>>>>>> cc8e6812aa9ce75feec954278081906ab6c16ac3
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       toast({
@@ -170,6 +195,10 @@ export const Settings = () => {
         description: "Password updated successfully",
       });
 
+<<<<<<< HEAD
+=======
+      // Reset form
+>>>>>>> cc8e6812aa9ce75feec954278081906ab6c16ac3
       setFormData({
         currentPassword: '',
         newPassword: '',
@@ -186,6 +215,7 @@ export const Settings = () => {
     }
   };
 
+<<<<<<< HEAD
   const menuItems = [
     { id: 'profile', label: 'My Profile' },
     { id: 'password', label: 'Change Password' },
@@ -230,3 +260,57 @@ export const Settings = () => {
     </div>
   );
 };
+=======
+  return (
+    <div className="container mx-auto p-4">
+      <Card className="max-w-md mx-auto">
+        <CardHeader>
+          <CardTitle>Change Password</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="currentPassword">Current Password</Label>
+              <Input
+                id="currentPassword"
+                name="currentPassword"
+                type="password"
+                value={formData.currentPassword}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">New Password</Label>
+              <Input
+                id="newPassword"
+                name="newPassword"
+                type="password"
+                value={formData.newPassword}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm New Password</Label>
+              <Input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                value={formData.confirmPassword}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? 'Updating...' : 'Update Password'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+
+>>>>>>> cc8e6812aa9ce75feec954278081906ab6c16ac3

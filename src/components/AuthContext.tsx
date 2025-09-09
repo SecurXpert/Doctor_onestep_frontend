@@ -78,6 +78,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setIsLoading(true);
       const response = await fetch('https://api.onestepmedi.com:8000/doctors/login', {
+
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

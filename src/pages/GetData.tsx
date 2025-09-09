@@ -111,7 +111,11 @@ export const GetData = () => {
     setError(null);
     try {
       const response = await fetchWithAuth(
+<<<<<<< HEAD
         `https://api.onestepmedi.com:8000/prescription/by-appointment/${appointmentId}`
+=======
+        `http://192.168.0.111:10000/prescription/by-appointment/${appointmentId}`
+>>>>>>> cc8e6812aa9ce75feec954278081906ab6c16ac3
       );
       const data = await response.json();
       if (response.ok) {
