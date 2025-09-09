@@ -27,11 +27,6 @@ const sidebarItems = [
     icon: User,
   },
   {
-    title: 'Dashboard',
-    href: '/doctorsdashboard',
-    icon: User,
-  },
-  {
     title: 'Appointments',
     href: '/appointments',
     icon: Calendar,
