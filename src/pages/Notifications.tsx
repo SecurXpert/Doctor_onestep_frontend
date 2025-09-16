@@ -81,7 +81,7 @@ const NotificationCard = ({ notification, onMarkRead, onDelete }) => {
                 onClick={() => onMarkRead(notification.id)}
                 className="h-8 w-8 p-0"
               >
-                <CheckCircle className="h-4 w-4 text-success" />
+                {/* <CheckCircle className="h-4 w-4 text-success" /> */}
               </Button>
             )}
             <Button
